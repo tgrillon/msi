@@ -1,9 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np 
+import time
 from PIL import Image 
 
 # Define patch dimensions
-dim= 23  
+dim= 23
+
+# Define epsilon error
+eps= 0.2
 
 # Load source image 
 src= Image.open("data/text2.png")
@@ -49,7 +53,7 @@ def getEdges(arr) -> np.array:
   return edg
 
 def binaryArray(arr) -> np.array:
-  bin= np.zeros((arr.shape[0], arr.shape[1], 1), dtype=np.uint8)
+  bin= np.zeros((arr.shape[0], arr.shape[1], 1), dtype=np.uint64)
   for x in range(arr.shape[0]):
     for y in range(arr.shape[1]):
       if filled(arr[x, y]):
@@ -60,7 +64,7 @@ def binaryArray(arr) -> np.array:
 
 def numberOfNeighbors(arr, edg, dim) -> [np.array, np.uint64] :
   ret= np.empty(shape=(0,1), dtype=np.float64)
-  msk= np.ones((dim, dim, 1), dtype=np.uint8)
+  msk= np.ones((dim, dim, 1), dtype=np.uint64)
   maxN= 0
   for e in edg:
     smp= arr[e[0]-dim//2:e[0]+dim//2+1, e[1]-dim//2:e[1]+dim//2+1]
@@ -113,22 +117,33 @@ ptch= dstArr[edg[ids[i]][0]-dim//2:edg[ids[i]][0]+dim//2+1, edg[ids[i]][1]-dim//
 # plt.imshow(ptch)
 # plt.show()
 
-def distance2(p, q) -> np.uint64:
-  return (p[0]-q[0])*(p[0]-q[0])+(p[1]-q[1])*(p[1]-q[1])+(p[2]-q[2])*(p[2]-q[2])
+def distance2(p, q) -> np.float64:
+  return (float(p[0]-q[0]))*(float(p[0]-q[0]))+(float(p[1]-q[1]))*(float(p[1]-q[1]))+(float(p[2]-q[2]))*(float(p[2]-q[2]))
 
-def patchDistance(ptchA, ptchB) -> np.uint64:
+def patchDistance(ptchA, ptchB, minErr, eps) -> np.float64:
   dist= 0  
   dim= ptchA.shape[0]
   for x in range(dim):
     for y in range(dim):
       dist= dist+distance2(ptchA[x, y], ptchB[x, y])
+      # print(min)
+      if dist>(1+eps)*minErr: return dist
   return dist
 
-dist= np.zeros(shape=(srcArr.shape[0], srcArr.shape[1], 1), dtype=np.uint64)
+t0 = time.time()
+
+minErr= 10000000
+dist= np.zeros(shape=(srcArr.shape[0], srcArr.shape[1], 1), dtype=np.float64)
 for x in range(dim//2, srcArr.shape[0]-dim//2): 
   for y in range(dim//2, srcArr.shape[1]-dim//2): 
     ptchA= srcArr[x-dim//2:x+dim//2+1, y-dim//2:y+dim//2+1]
-    dist[x, y]= patchDistance(ptchA, ptch)
+    dist[x, y]= patchDistance(ptchA, ptch, minErr, eps)
+    # print(minErr, dist[x, y])
+    minErr= min(minErr, dist[x, y])
+
+t1 = time.time()
+print("timestamp: ", t1-t0)
+
 
 fig, axes = plt.subplots(1, 3, figsize=(10, 10))
 axes = axes.flatten()
