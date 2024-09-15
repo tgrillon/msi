@@ -4,7 +4,7 @@ import time
 from PIL import Image 
 
 # Define patch dimensions
-dim= 23
+dim= 5
 
 # Define epsilon error
 eps= 0.2
@@ -85,13 +85,13 @@ ngh, maxN= numberOfNeighbors(bin, edg, dim)
 s= 0.95
 ths= s*maxN
 
-
 # Get the index of pixels with most neighbors 
 ids= np.where(ngh > ths)  
 ids= ids[0]
 
 i= np.random.randint(0, ids.shape[0]-1)
 ptch= dstArr[edg[ids[i]][0]-dim//2:edg[ids[i]][0]+dim//2+1, edg[ids[i]][1]-dim//2:edg[ids[i]][1]+dim//2+1] 
+ptch= ptch.astype(np.float64)
 
 # # Number of patches
 # num_patches = len(ids)
@@ -118,7 +118,7 @@ ptch= dstArr[edg[ids[i]][0]-dim//2:edg[ids[i]][0]+dim//2+1, edg[ids[i]][1]-dim//
 # plt.show()
 
 def distance2(p, q) -> np.float64:
-  return (float(p[0]-q[0]))*(float(p[0]-q[0]))+(float(p[1]-q[1]))*(float(p[1]-q[1]))+(float(p[2]-q[2]))*(float(p[2]-q[2]))
+  return (p[0]-q[0])*(p[0]-q[0])+(p[1]-q[1])*(p[1]-q[1])+(p[2]-q[2])*(p[2]-q[2])
 
 def patchDistance(ptchA, ptchB, minErr, eps) -> np.float64:
   dist= 0  
@@ -132,11 +132,12 @@ def patchDistance(ptchA, ptchB, minErr, eps) -> np.float64:
 
 t0 = time.time()
 
-minErr= 10000000
+minErr= float("inf")
 dist= np.zeros(shape=(srcArr.shape[0], srcArr.shape[1], 1), dtype=np.float64)
 for x in range(dim//2, srcArr.shape[0]-dim//2): 
   for y in range(dim//2, srcArr.shape[1]-dim//2): 
     ptchA= srcArr[x-dim//2:x+dim//2+1, y-dim//2:y+dim//2+1]
+    ptchA= ptchA.astype(np.float64)
     dist[x, y]= patchDistance(ptchA, ptch, minErr, eps)
     # print(minErr, dist[x, y])
     minErr= min(minErr, dist[x, y])
@@ -144,11 +145,10 @@ for x in range(dim//2, srcArr.shape[0]-dim//2):
 t1 = time.time()
 print("timestamp: ", t1-t0)
 
-
 fig, axes = plt.subplots(1, 3, figsize=(10, 10))
 axes = axes.flatten()
 
-axes[0].imshow(ptch, cmap='gray', interpolation='none')
+axes[0].imshow(ptch.astype(np.uint8), cmap='gray', interpolation='none')
 axes[0].axis('off')  # Hide axes
 
 axes[1].imshow(srcArr, cmap='gray', interpolation='none')
