@@ -87,26 +87,3 @@ def find_matching_color(source_array, patch_source, patch_size, epsilon) -> [np.
 
   i= np.random.randint(0, len(candidates))
   return [source_array[candidates[i][0], candidates[i][1]], patch_distances]
-
-
-# arr= np.array([
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-#   [0, 0, 0, 1, 1, 1, 0, 0, 0], 
-#   [0, 0, 0, 1, 1, 1, 0, 0, 0], 
-#   [0, 0, 0, 1, 1, 1, 0, 0, 0], 
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-#   [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-# ])
-
-# mask= np.ones((5, 5), dtype=np.uint64)
-# extended_arr= np.pad(arr, pad_width=2, mode='constant', constant_values=0)
-# conv_array= convolve(extended_arr, mask)
-# conv_array= np.convolve(extended_arr.flatten(), mask.flatten(), mode="valid")
-# conv_array= np.reshape(conv_array, (extended_arr.shape[0], extended_arr.shape[1]))
-# print(conv_array)
-
-# print(np.pad(arr, pad_width=2, mode='constant', constant_values=0))
-# print(find_unfilled_with_neighbors(arr))

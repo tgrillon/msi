@@ -11,18 +11,18 @@ from PIL import Image
 elapsed_time_0 = time.time()
 
 # Define patch patch_sizes
-patch_size= 3
+patch_size= 11
 pad_size= patch_size//2
 
 # Define epsilon error
-epsilon= 0.2
+epsilon= 0.02
 
 # Load source image 
 source= Image.open("data/text0.png")
 source_array= np.array(source)
 
 # Define destination image
-height, width= 16, 16
+height, width= 32, 32
 destination_array= np.zeros(shape=(width, height, 3), dtype=np.uint8) 
 
 # Initisalize I_smp
@@ -92,12 +92,19 @@ axes[0].set_title('Patch sample')
 axes[0].axis('off')  # Hide axes
 
 axes[1].imshow(source_array, cmap='gray', interpolation='none')
-axes[1].set_title('Source image')
+axes[1].set_title('Input image')
 axes[1].axis('off')  # Hide axes
 
 axes[2].imshow(destination_array, cmap='gray', interpolation='none')
-axes[2].set_title('Result image')
+axes[2].set_title('Output image')
 axes[2].axis('off')  # Hide axes
 
 plt.tight_layout()
+random_number = np.random.randint(1000, 9999)
+file_name = f"output_figure_{width}x{height}_p{patch_size}_{random_number}.png"
+plt.savefig(file_name, format='png', dpi=300)  
 plt.show()
+
+output_image = Image.fromarray(destination_array)
+file_name = f"output_image_{width}x{height}_p{patch_size}_{random_number}.png"
+output_image.save(file_name)
