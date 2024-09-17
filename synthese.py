@@ -18,7 +18,7 @@ pad_size= patch_size//2
 epsilon= 0.2
 
 # Load source image 
-source= Image.open("data/text4.png")
+source= Image.open("data/text0.png")
 source_array= np.array(source)
 
 # Define destination image
@@ -42,13 +42,7 @@ destination_array[x:x+patch_size, y:y+patch_size]= patch_sample
 binary_array= np.any(destination_array != [0, 0, 0], axis=-1).astype(int)
 edges= utils.find_unfilled_with_neighbors(binary_array)
 
-while len(edges) > 0: 
-  remaining_pixels= np.count_nonzero(np.all(destination_array==[0,0,0],axis=2))
-  completion_percentage= 100.*(1-remaining_pixels/(width*height))
-  output = f"Remaining pixels: {remaining_pixels}, Completion: {completion_percentage:.2f}%"
-    
-  sys.stdout.write('\r' + output)
-  sys.stdout.flush()
+def process_pixel():
   neighbors, max_value= utils.compute_number_of_neighbors(binary_array, edges, patch_size)
   threshold= (1-epsilon)*max_value
 
@@ -64,9 +58,29 @@ while len(edges) > 0:
 
   destination_array[x, y], distances= utils.find_matching_color(source_array, patch, patch_size, epsilon)
 
+check_time= True
+while len(edges) > 0: 
+  if check_time:
+    check_time_0 = time.time()
+  
+  process_pixel()
   binary_array = np.any(destination_array != [0, 0, 0], axis=-1).astype(int)
   edges= utils.find_unfilled_with_neighbors(binary_array)
 
+  if check_time:
+    check_time_1 = time.time()
+    check_time= False
+
+  #=======Print infos=======#
+  remaining_pixels= np.count_nonzero(np.all(destination_array==[0,0,0],axis=2))
+  completion_percentage= 100.*(1-remaining_pixels/(width*height))
+  output_completion = f"[Remaining pixels: {remaining_pixels}, Completion: {completion_percentage:.2f}%]"
+
+  estimated_time= (check_time_1-check_time_0)*remaining_pixels
+  output_estimation = f"[Estimated time: {estimated_time:.2f}sec/{estimated_time/60.:.2f}min]"
+  sys.stdout.write('\r' + output_completion + '----' + output_estimation)
+  sys.stdout.flush()
+  #==========================#
 elapsed_time_1 = time.time()
 print("\nTotal elapsed time: ", elapsed_time_1-elapsed_time_0)
 
