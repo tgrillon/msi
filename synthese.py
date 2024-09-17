@@ -11,7 +11,7 @@ from PIL import Image
 elapsed_time_0 = time.time()
 
 # Define patch patch_sizes
-patch_size= 5
+patch_size= 3
 pad_size= patch_size//2
 
 # Define epsilon error
@@ -22,7 +22,7 @@ source= Image.open("data/text0.png")
 source_array= np.array(source)
 
 # Define destination image
-height, width= 64, 64
+height, width= 16, 16
 destination_array= np.zeros(shape=(width, height, 3), dtype=np.uint8) 
 
 # Initisalize I_smp
@@ -87,13 +87,16 @@ print("\nTotal elapsed time: ", elapsed_time_1-elapsed_time_0)
 fig, axes = plt.subplots(1, 3, figsize=(10, 10))
 axes = axes.flatten()
 
-axes[0].imshow(patch.astype(np.uint8), cmap='gray', interpolation='none')
+axes[0].imshow(patch_sample, cmap='gray', interpolation='none')
+axes[0].set_title('Patch sample')
 axes[0].axis('off')  # Hide axes
 
-axes[1].imshow(destination_array, cmap='gray', interpolation='none')
+axes[1].imshow(source_array, cmap='gray', interpolation='none')
+axes[1].set_title('Source image')
 axes[1].axis('off')  # Hide axes
 
-axes[2].imshow(source_array, cmap='gray', interpolation='none')
+axes[2].imshow(destination_array, cmap='gray', interpolation='none')
+axes[2].set_title('Result image')
 axes[2].axis('off')  # Hide axes
 
 plt.tight_layout()
