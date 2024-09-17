@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from scipy.ndimage import convolve
+from numpy.lib.stride_tricks import as_strided
 
 def find_unfilled_with_neighbors(binary_array):
   shifted_up= np.roll(binary_array, shift=-1, axis=0)
@@ -22,27 +23,26 @@ def find_unfilled_with_neighbors(binary_array):
 def compute_number_of_neighbors(binary_array, candidates, patch_size) -> [np.array, np.uint64] :
   neighbors_count= np.zeros(len(candidates), dtype=np.uint64)
   mask= np.ones((patch_size, patch_size), dtype=np.uint64)
+  pad_size= patch_size//2
+  extended_array= np.pad(binary_array, pad_width=pad_size, mode='constant', constant_values=0)
   max_value= 0
-  conv_array= convolve(binary_array, mask)
+  conv_array= convolve(extended_array, mask)
   for i, (x, y) in enumerate(candidates):
-    neighbors_count[i]= conv_array[x, y] 
+    neighbors_count[i]= conv_array[y+pad_size, x+pad_size] 
 
   max_value= np.max(neighbors_count)
   return [neighbors_count, max_value]
-  # pad_size= patch_size//2 
-  # extended_array= np.pad(binary_array, pad_width=pad_size, mode='constant', constant_values=0)
-  # mask= np.ones((patch_size, patch_size), dtype=np.uint64)
-  # neighbors_count= np.zeros(len(candidates), dtype=np.uint64)
-  # conv_array= np.convolve(binary_array.flatten(), mask.flatten(), mode="same")
-  # print(conv_array) 
-  # for idx, (x, y) in enumerate(candidates):
-  #   patch= extended_array[x-pad_size:x+pad_size+1, y-pad_size:y+pad_size+1] 
-  #   neighbors_count[idx]= np.convolve(patch.flatten(), mask.flatten(), mode="valid")
-  # max_value = np.max(neighbors_count)
-  # return neighbors_count, max_value
 
 def compute_patch_distance(patch_a, patch_b, min_error, epsilon) -> np.float64:
-    squared_diff= (patch_a - patch_b) ** 2
+    patch_a_flat = patch_a.reshape(-1, 3)
+    patch_b_flat = patch_b.reshape(-1, 3)
+
+    mask= np.any(patch_a_flat.reshape(-1, 3) != 0, axis=1)
+    
+    masked_a= patch_a_flat[mask]
+    masked_b= patch_b_flat[mask]
+    
+    squared_diff= (masked_a - masked_b) ** 2
     
     cumsum_squared_diff= np.cumsum(squared_diff)
     
@@ -52,19 +52,38 @@ def compute_patch_distance(patch_a, patch_b, min_error, epsilon) -> np.float64:
     
     return cumsum_squared_diff[-1]
 
-def find_matching_color(source_array, patch_sample, patch_size, epsilon) -> [np.array, np.array]: 
-  min_error= float("inf")
-  patch_distances= np.zeros(shape=(source_array.shape[0], source_array.shape[1], 1), dtype=np.float64)
-  for x in range(patch_size//2, source_array.shape[0]-patch_size//2): 
-    for y in range(patch_size//2, source_array.shape[1]-patch_size//2): 
-      patch_source= source_array[x-patch_size//2:x+patch_size//2+1, y-patch_size//2:y+patch_size//2+1]
-      patch_source= patch_source.astype(np.float64)
-      patch_distances[x, y]= compute_patch_distance(patch_source, patch_sample, min_error, epsilon)
-      min_error= min(min_error, patch_distances[x, y])
+def find_matching_color(source_array, patch_source, patch_size, epsilon) -> [np.array, np.array]: 
+  pad_size= patch_size//2
+  extended_array = np.pad(
+    source_array, 
+    pad_width=((pad_size, pad_size), (pad_size, pad_size), (0, 0)), 
+    mode='constant', 
+    constant_values=0
+  )
+  
+  shape=(source_array.shape[0], source_array.shape[1], patch_size, patch_size, 3)
+  strides=extended_array.strides[:2] + extended_array.strides
+  patches = as_strided(extended_array, shape=shape, strides=strides)
 
-  candidates_indices= np.where((patch_distances[patch_size//2:source_array.shape[0]-patch_size//2, patch_size//2:source_array.shape[1]-patch_size//2, 0] <= (epsilon + 1) * min_error) & (patch_distances[patch_size//2:source_array.shape[0]-patch_size//2, patch_size//2:source_array.shape[1]-patch_size//2, 0] > 0))
+  patches_f = patches.astype(np.float64)
+  patch_source_f = patch_source.astype(np.float64)
+  
+  patch_distances= np.zeros(shape=(source_array.shape[0], source_array.shape[1]), dtype=np.float64)
+  min_error= float("inf")
+  for x in range(0, source_array.shape[0]): 
+    for y in range(0, source_array.shape[1]): 
+      patch_sample= patches_f[x, y]
+      distance= compute_patch_distance(patch_source_f, patch_sample, min_error, epsilon)
+      patch_distances[x, y]= distance
+      if min_error > distance:
+         min_error= distance
+
+  candidates_indices= np.where((patch_distances[:, :] <= (epsilon + 1) * min_error))
   x_coords, y_coords= candidates_indices
   candidates= list(zip(x_coords, y_coords))
+
+  if len(candidates) == 0:
+    return [None, patch_distances]
 
   i= np.random.randint(0, len(candidates))
   return [source_array[candidates[i][0], candidates[i][1]], patch_distances]
